@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+
+# Wrangler
+.wrangler/
+wrangler.toml.backup
+.dev.vars
+
+# Build outputs
+dist/
+*.js
+*.js.map
+!wrangler.toml
+
+# TypeScript
+*.tsbuildinfo
+
+# Environment
+.env
+.env.*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary files
+tmp/
+state/
