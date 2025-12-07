@@ -1,20 +1,14 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { questions, type Question } from "./data/questions";
-
-type Bindings = {
-	// Add any environment variables here if needed
-};
+import { questions } from "./data/questions";
+import { GradeRequest, Bindings } from "./types/gradeRequest";
 
 const app = new Hono<{ Bindings: Bindings }>();
 
-// Enable CORS for all routes
 app.use("/*", cors());
 
-// GET /api/quiz - Return quiz questions
 app.get("/api/quiz", (c) => {
 	try {
-		// Remove correct answers from response
 		const quizQuestions = questions.map((q) => {
 			const { correctText, correctIndex, correctIndexes, ...rest } = q as any;
 			return rest;
@@ -26,22 +20,10 @@ app.get("/api/quiz", (c) => {
 	}
 });
 
-// Answer type for grading
-interface Answer {
-	id: string | number;
-	value: string | number | number[];
-}
-
-interface GradeRequest {
-	answers: Answer[];
-}
-
-// POST /api/grade - Grade the quiz
 app.post("/api/grade", async (c) => {
 	try {
 		const body = await c.req.json<GradeRequest>();
 
-		// Validate request body
 		if (!body.answers || !Array.isArray(body.answers)) {
 			return c.json({ error: "Invalid request: answers must be an array" }, 400);
 		}
@@ -49,7 +31,6 @@ app.post("/api/grade", async (c) => {
 		let score = 0;
 		const results: Array<{ id: string | number; correct: boolean }> = [];
 
-		// Grade each answer
 		for (const answer of body.answers) {
 			const question = questions.find((q) => q.id === String(answer.id));
 
@@ -97,7 +78,6 @@ app.post("/api/grade", async (c) => {
 	}
 });
 
-// Health check endpoint
 app.get("/", (c) => {
 	return c.json({ message: "Quiz API is running!" });
 });
