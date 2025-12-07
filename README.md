@@ -4,8 +4,8 @@ A production-ready quiz application built with Hono (backend) and Next.js (front
 
 ## 🔗 Live Demo
 
--   **Frontend**: https://your-app.vercel.app
--   **Backend API**: https://your-api.workers.dev
+-   **Frontend**: https://enrolla-quiz-challenge.vercel.app/
+-   **Backend API**: https://quiz-api.2ffcks8tzz.workers.dev/
 
 ## 🚀 Quick Start
 
