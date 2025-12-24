@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import { useSnapshot } from "valtio";
 import { useRouter } from "next/navigation";
 import { fetchQuiz, submitAnswers } from "@/lib/api";
@@ -9,7 +9,7 @@ import RadioQuestion from "./components/RadioQuestion";
 import CheckboxQuestion from "./components/CheckboxQuestion";
 import LoadingQuiz from "./components/LoadingQuiz";
 import { toast } from "sonner";
-import { Send } from "lucide-react";
+import { Send, Play, X } from "lucide-react";
 
 function formatTime(seconds: number): string {
 	const mins = Math.floor(seconds / 60);
@@ -21,6 +21,7 @@ export default function QuizPage() {
 	const router = useRouter();
 	const snap = useSnapshot(store);
 	const timerRef = useRef<NodeJS.Timeout | null>(null);
+	const [showConfirmModal, setShowConfirmModal] = useState(false);
 
 	const handleSubmit = useCallback(
 		async (isAutoSubmit = false) => {
@@ -100,7 +101,6 @@ export default function QuizPage() {
 				store.loading = true;
 				const data = await fetchQuiz();
 				store.questions = data;
-				store.quizStartTime = Date.now();
 			} catch (err) {
 				const errorMessage = err instanceof Error ? err.message : "Failed to load quiz";
 				toast.error(errorMessage);
@@ -117,6 +117,27 @@ export default function QuizPage() {
 			...store.answers,
 			[questionId]: value,
 		};
+	};
+
+	const handleStartQuiz = () => {
+		store.quizStartTime = Date.now();
+		toast.success("Quiz started! Good luck!");
+	};
+
+	const handleSubmitClick = () => {
+		const unanswered = store.questions.filter((q) => !(q.id in store.answers));
+
+		if (unanswered.length > 0) {
+			toast.error(`Please answer all questions. ${unanswered.length} question(s) remaining.`);
+			return;
+		}
+
+		setShowConfirmModal(true);
+	};
+
+	const handleConfirmSubmit = () => {
+		setShowConfirmModal(false);
+		handleSubmit(false);
 	};
 
 	if (snap.loading) {
@@ -136,6 +157,31 @@ export default function QuizPage() {
 						className="bg-black text-white py-3 px-5 rounded-lg text-sm cursor-pointer hover:bg-gray-700 transition-colors font-medium"
 					>
 						Retry
+					</button>
+				</div>
+			</div>
+		);
+	}
+
+	if (!snap.quizStartTime) {
+		return (
+			<div className="min-h-screen bg-white flex items-center justify-center px-4">
+				<div className="p-8 max-w-md text-center">
+					<h2 className="text-3xl font-bold text-gray-900 mb-4">
+						Full-Stack Developer Quiz
+					</h2>
+					<p className="text-gray-600 mb-6">
+						You have {Math.floor(store.quizDuration / 60)} minutes to complete{" "}
+						{snap.questions.length} questions.
+						<br />
+						Once you start, the timer cannot be paused.
+					</p>
+					<button
+						onClick={handleStartQuiz}
+						className="bg-black text-white py-3 px-6 rounded-lg text-base cursor-pointer hover:bg-gray-700 transition-colors font-semibold flex items-center gap-2 mx-auto"
+					>
+						<Play size={18} />
+						Start Quiz
 					</button>
 				</div>
 			</div>
@@ -216,7 +262,7 @@ export default function QuizPage() {
 
 				<div className="p-6 flex justify-end">
 					<button
-						onClick={() => handleSubmit(false)}
+						onClick={handleSubmitClick}
 						disabled={
 							snap.submitting ||
 							Object.keys(snap.answers).length !== snap.questions.length
@@ -228,6 +274,40 @@ export default function QuizPage() {
 					</button>
 				</div>
 			</div>
+
+			{showConfirmModal && (
+				<div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
+					<div className="bg-white rounded-lg p-6 max-w-md w-full">
+						<div className="flex justify-between items-start mb-4">
+							<h3 className="text-xl font-bold text-gray-900">Submit Quiz?</h3>
+							<button
+								onClick={() => setShowConfirmModal(false)}
+								className="text-gray-400 hover:text-gray-600"
+							>
+								<X size={20} />
+							</button>
+						</div>
+						<p className="text-gray-600 mb-6">
+							Are you sure you want to submit your quiz? You won't be able to change
+							your answers after submission.
+						</p>
+						<div className="flex gap-3 justify-end">
+							<button
+								onClick={() => setShowConfirmModal(false)}
+								className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+							>
+								Cancel
+							</button>
+							<button
+								onClick={handleConfirmSubmit}
+								className="px-4 py-2 text-sm font-medium text-white bg-black rounded-lg hover:bg-gray-700 transition-colors"
+							>
+								Submit Quiz
+							</button>
+						</div>
+					</div>
+				</div>
+			)}
 		</div>
 	);
 }
